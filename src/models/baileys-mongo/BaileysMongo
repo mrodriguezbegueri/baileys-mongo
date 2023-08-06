@@ -7,7 +7,7 @@ type CreateStoreResult = {
   };
 
 export class BaileysMongo {
-    static _instace = new BaileysMongo()
+    static _instance = new BaileysMongo()
 
     private constructor() {}
 
@@ -54,3 +54,5 @@ export class BaileysMongo {
         return {createNewAuth: createAuthStore}
     }
 }
+
+export default BaileysMongo._instance
