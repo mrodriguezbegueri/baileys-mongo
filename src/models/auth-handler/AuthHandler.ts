@@ -10,10 +10,10 @@ const KEY_MAP: { [T in keyof SignalDataTypeMap]: string } = {
   'sender-key-memory': 'senderKeyMemory'
 }
 
-export default class AuthHandle {
+export default class AuthHandler {
   constructor (private readonly prismaCLient: PrismaClient, private readonly key: string) {}
 
-  useAuthHandle = async (): Promise<{
+  useAuthHandler = async (): Promise<{
     state: AuthenticationState
     saveState: () => Promise<any>
   }> => {
