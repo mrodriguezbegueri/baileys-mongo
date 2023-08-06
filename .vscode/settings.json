@@ -3,5 +3,8 @@
         "activityBar.background": "#13341B",
         "titleBar.activeBackground": "#1A4926",
         "titleBar.activeForeground": "#F7FCF8"
-    }
+    },
+    "cSpell.words": [
+        "Creds"
+    ]
 }
