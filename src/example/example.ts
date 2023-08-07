@@ -57,10 +57,10 @@ const start = async (storeKey: string): Promise<void> => {
 
     await createSocket(state, saveState)
   } catch (err) {
-    throw new Error('Error')
+    throw new Error(err)
   }
 }
 
 start('storeKeyExample').catch((err) => {
-  console.log('err', err)
+  console.log(`Error starting client ${err.message as string}`)
 })
