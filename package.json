@@ -10,7 +10,8 @@
     "lint": "ts-standard",
     "tsc": "tsc",
     "start": "node build/index.js",
-    "start:dev": "ts-node-dev src/index.ts"
+    "start:dev": "ts-node-dev src/index.ts",
+    "example": "ts-node-dev src/example/example.ts"
   },
   "devDependencies": {
     "@types/express": "4.17.13",
@@ -22,7 +23,8 @@
     "@prisma/client": "^5.1.1",
     "@whiskeysockets/baileys": "^6.4.0",
     "dotenv": "^16.3.1",
-    "express": "4.18.1"
+    "express": "4.18.1",
+    "qrcode-terminal": "^0.12.0"
   },
   "eslintConfig": {
     "parserOptions": {
