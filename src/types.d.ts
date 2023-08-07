@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { AuthenticationState } from '@whiskeysockets/baileys'
+import AuthHandler from './models/auth-handler/AuthHandler'
 
 export interface CreateNewAuthResult {
   auth: AuthHandler
