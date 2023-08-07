@@ -1,11 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import AuthHandler from '../auth-handler/AuthHandler'
 import { PrismaSingleton } from '../../db/db'
-
-interface CreateStoreResult {
-  auth: AuthHandler
-}
-
+import { CreateNewAuthResult } from '../../types'
 class BaileysMongo {
   static _instance = new BaileysMongo()
 
@@ -40,11 +36,11 @@ class BaileysMongo {
   init = async (): Promise<{
     createNewAuth: (
     storeKey: string
-    ) => Promise<CreateStoreResult>
+    ) => Promise<CreateNewAuthResult>
   }> => {
     const { prismaClient } = await PrismaSingleton.getInstance()
 
-    const createAuthStore = async (storeKey: string): Promise<CreateStoreResult> => {
+    const createAuthStore = async (storeKey: string): Promise<{auth: AuthHandler, mongoDB: PrismaClient}> => {
       const auth = await this.createNewAuth(storeKey, prismaClient)
 
       return auth

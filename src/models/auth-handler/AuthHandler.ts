@@ -1,5 +1,6 @@
-import { AuthenticationCreds, AuthenticationState, BufferJSON, initAuthCreds, proto, SignalDataSet, SignalDataTypeMap } from '@whiskeysockets/baileys'
+import { AuthenticationCreds, BufferJSON, initAuthCreds, proto, SignalDataSet, SignalDataTypeMap } from '@whiskeysockets/baileys'
 import { PrismaClient, Auth } from '@prisma/client'
+import { useAuthHandlerResult } from '../../types'
 
 const KEY_MAP: { [T in keyof SignalDataTypeMap]: string } = {
   'pre-key': 'preKeys',
@@ -13,10 +14,7 @@ const KEY_MAP: { [T in keyof SignalDataTypeMap]: string } = {
 export default class AuthHandler {
   constructor (private readonly prismaCLient: PrismaClient, private readonly key: string) {}
 
-  useAuthHandler = async (): Promise<{
-    state: AuthenticationState
-    saveState: () => Promise<any>
-  }> => {
+  useAuthHandler = async (): Promise<useAuthHandlerResult> => {
     let creds: AuthenticationCreds
     let keys: any = {}
 

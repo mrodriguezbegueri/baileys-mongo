@@ -1,7 +1,11 @@
+import { PrismaClient } from '@prisma/client'
 import BaileysMongo from '../models/baileys-mongo/BaileysMongo'
-import makeWASocket, { AuthenticationState, DisconnectReason } from '@whiskeysockets/baileys'
+import makeWASocket, { DisconnectReason } from '@whiskeysockets/baileys'
+import { useAuthHandlerResult } from '../types'
 
-const createSocket = async (state: AuthenticationState, saveState: any): Promise<any> => {
+const createSocket = async (authHandler: useAuthHandlerResult, mongoDB: PrismaClient): Promise<any> => {
+  const { state, saveState } = authHandler
+
   const sock = makeWASocket(
     {
       auth: state,
@@ -22,11 +26,16 @@ const createSocket = async (state: AuthenticationState, saveState: any): Promise
           const loggedOut = lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut
 
           if (!loggedOut) {
-            await createSocket(state, saveState)
+            await createSocket(authHandler, mongoDB)
           }
 
           if (loggedOut) {
             console.log('Connection closed by logout')
+            await mongoDB.auth.delete({
+              where: {
+                key: 'storeKeyExample'
+              }
+            })
           }
         }
 
@@ -51,11 +60,11 @@ const start = async (storeKey: string): Promise<void> => {
   try {
     const { createNewAuth } = await BaileysMongo.init()
 
-    const { auth } = await createNewAuth(storeKey)
+    const { auth, mongoDB } = await createNewAuth(storeKey)
 
-    const { state, saveState } = await auth.useAuthHandler()
+    const authHandler = await auth.useAuthHandler()
 
-    await createSocket(state, saveState)
+    await createSocket(authHandler, mongoDB)
   } catch (err) {
     throw new Error(err)
   }
@@ -64,3 +73,7 @@ const start = async (storeKey: string): Promise<void> => {
 start('storeKeyExample').catch((err) => {
   console.log(`Error starting client ${err.message as string}`)
 })
+
+// start('storeKeyExample2').catch((err) => {
+//   console.log(`Error starting client ${err.message as string}`)
+// })
