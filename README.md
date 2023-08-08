@@ -48,30 +48,6 @@ Descripción
 
 Take a look at the information in the [example folder](https://github.com/mrodriguezbegueri/baileys-mongo/blob/main/src/example/example.ts)
 
-## I wanna tweak it for my own use case
-
-Sure thing! You can tinker with the package like this:
-
-1. Clone the repo
-   ```bash
-   git clone https://github.com/deadlinecode/baileys-bottle .
-   ```
-2. Change stuff you wanna change
-3. Build the package
-   ```bash
-   npm build
-   ```
-4. Install it in another nodejs project from wherever you saved it on your disk
-   ```bash
-   # inside your other project
-   npm install /path/to/the/repo/named/baileys-bottle
-   ```
-   or alternatively run the example
-   ```bash
-   # inside the package folder
-   npm run example
-   ```
-
 ## You need help or want to exchange about things
 
 Send me an email to mrodriguezbegueri@gmail.com
