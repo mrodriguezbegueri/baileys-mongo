@@ -3,7 +3,7 @@
 ## Package made by mrodriguezbegueri for using mongodb to store auth sessions from Baileys package
 ## This package was inspired from baileys-bottle package made by deadlinecode.
 
-Descripción
+This package let you save in mongo the credentials to create whatsapp socket with Baileys package.
 
 ## Installation
 
