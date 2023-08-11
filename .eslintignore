@@ -1,0 +1,5 @@
+# Ignore artifacts:
+build
+*.lock
+.eslintrc.json
+src/example/example.ts
