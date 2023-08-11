@@ -1,6 +1,6 @@
 {
   "name": "baileys-mongo",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "This package let you save in mongo the credentials to create whatsapp socket with Baileys package.",
   "main": "build/index.js",
   "types": "build/index.d.ts",

@@ -107,6 +107,6 @@
     "src/**/*"
   ],
   "exclude": [
-    "node_modules", "build", "src/example"
+    "node_modules", "build", "src/example/**/*"
   ]
 }

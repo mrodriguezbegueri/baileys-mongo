@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import AuthHandler from '../auth-handler/AuthHandler'
 import { PrismaSingleton } from '../../db/db'
 import { CreateNewAuthResult } from '../../types'
-class BaileysMongo {
+export class BaileysMongo {
   static _instance = new BaileysMongo()
 
   private constructor () {}
