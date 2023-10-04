@@ -18,67 +18,72 @@ export default class AuthHandler {
     let creds: AuthenticationCreds
     let keys: any = {}
 
-    const authDB = await this.prismaCLient.auth.findFirst({
-      where: {
-        key: this.key
-      }
-    })
-
-    if (authDB !== null && authDB.value !== '') {
-      ({ creds, keys } = JSON.parse(authDB.value, BufferJSON.reviver))
-    } else {
-      creds = initAuthCreds()
-      keys = {}
-    }
-
-    const saveState = async (): Promise<Auth> => {
-      const saveStateResult = await this.prismaCLient.auth.upsert({
+    try {
+      const authDB = await this.prismaCLient.auth.findFirst({
         where: {
           key: this.key
-        },
-        update: {
-          value: JSON.stringify({ creds, keys }, BufferJSON.replacer, 2)
-        },
-        create: {
-          key: this.key,
-          value: JSON.stringify({ creds, keys }, BufferJSON.replacer, 2)
         }
       })
-
-      return saveStateResult
-    }
-
-    return {
-      state: {
-        creds,
-        keys: {
-          get: <T extends keyof SignalDataTypeMap>(type: T, ids: string[]) => {
-            const key = KEY_MAP[type]
-            return ids.reduce((dict: any, id) => {
-              let value = keys[key]?.[id]
-              if (value !== undefined) {
-                if (type === 'app-state-sync-key') {
-                  value = proto.Message.AppStateSyncKeyData.fromObject(value)
-                }
-                dict[id] = value
-              }
-              return dict
-            }, {})
+  
+      if (authDB !== null && authDB.value !== '') {
+        ({ creds, keys } = JSON.parse(authDB.value, BufferJSON.reviver))
+      } else {
+        creds = initAuthCreds()
+        keys = {}
+      }
+  
+      const saveState = async (): Promise<Auth> => {
+        const saveStateResult = await this.prismaCLient.auth.upsert({
+          where: {
+            key: this.key
           },
-          set: async (data: SignalDataSet) => {
-            for (const _key in data) {
-              const key = KEY_MAP[_key as keyof SignalDataTypeMap]
-              if (keys[key] === undefined) {
-                keys[key] = {}
-              }
-              Object.assign(keys[key], data[_key as keyof SignalDataTypeMap])
-            }
-
-            await saveState()
+          update: {
+            value: JSON.stringify({ creds, keys }, BufferJSON.replacer, 2)
+          },
+          create: {
+            key: this.key,
+            value: JSON.stringify({ creds, keys }, BufferJSON.replacer, 2)
           }
-        }
-      },
-      saveState
+        })
+    
+        return saveStateResult
+      }
+  
+      return {
+        state: {
+          creds,
+          keys: {
+            get: <T extends keyof SignalDataTypeMap>(type: T, ids: string[]) => {
+              const key = KEY_MAP[type]
+              return ids.reduce((dict: any, id) => {
+                let value = keys[key]?.[id]
+                if (value !== undefined) {
+                  if (type === 'app-state-sync-key') {
+                    value = proto.Message.AppStateSyncKeyData.fromObject(value)
+                  }
+                  dict[id] = value
+                }
+                return dict
+              }, {})
+            },
+            set: async (data: SignalDataSet) => {
+              for (const _key in data) {
+                const key = KEY_MAP[_key as keyof SignalDataTypeMap]
+                if (keys[key] === undefined) {
+                  keys[key] = {}
+                }
+                Object.assign(keys[key], data[_key as keyof SignalDataTypeMap])
+              }
+  
+              await saveState()
+            }
+          }
+        },
+        saveState
+      }
+    } finally {
+      await this.prismaCLient.$disconnect()
     }
+    
   }
 }
