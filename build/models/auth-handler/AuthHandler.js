@@ -25,66 +25,72 @@ class AuthHandler {
         this.useAuthHandler = () => __awaiter(this, void 0, void 0, function* () {
             let creds;
             let keys = {};
-            const authDB = yield this.prismaCLient.auth.findFirst({
-                where: {
-                    key: this.key
-                }
-            });
-            if (authDB !== null && authDB.value !== '') {
-                ({ creds, keys } = JSON.parse(authDB.value, baileys_1.BufferJSON.reviver));
-            }
-            else {
-                creds = (0, baileys_1.initAuthCreds)();
-                keys = {};
-            }
-            const saveState = () => __awaiter(this, void 0, void 0, function* () {
-                const saveStateResult = yield this.prismaCLient.auth.upsert({
+            try {
+                const authDB = yield this.prismaCLient.auth.findFirst({
                     where: {
                         key: this.key
-                    },
-                    update: {
-                        value: JSON.stringify({ creds, keys }, baileys_1.BufferJSON.replacer, 2)
-                    },
-                    create: {
-                        key: this.key,
-                        value: JSON.stringify({ creds, keys }, baileys_1.BufferJSON.replacer, 2)
                     }
                 });
-                return saveStateResult;
-            });
-            return {
-                state: {
-                    creds,
-                    keys: {
-                        get: (type, ids) => {
-                            const key = KEY_MAP[type];
-                            return ids.reduce((dict, id) => {
-                                var _a;
-                                let value = (_a = keys[key]) === null || _a === void 0 ? void 0 : _a[id];
-                                if (value !== undefined) {
-                                    if (type === 'app-state-sync-key') {
-                                        value = baileys_1.proto.Message.AppStateSyncKeyData.fromObject(value);
-                                    }
-                                    dict[id] = value;
-                                }
-                                return dict;
-                            }, {});
+                if (authDB !== null && authDB.value !== '') {
+                    ({ creds, keys } = JSON.parse(authDB.value, baileys_1.BufferJSON.reviver));
+                }
+                else {
+                    creds = (0, baileys_1.initAuthCreds)();
+                    keys = {};
+                }
+                const saveState = () => __awaiter(this, void 0, void 0, function* () {
+                    const saveStateResult = yield this.prismaCLient.auth.upsert({
+                        where: {
+                            key: this.key
                         },
-                        set: (data) => __awaiter(this, void 0, void 0, function* () {
-                            for (const _key in data) {
-                                const key = KEY_MAP[_key];
-                                if (keys[key] === undefined) {
-                                    keys[key] = {};
+                        update: {
+                            value: JSON.stringify({ creds, keys }, baileys_1.BufferJSON.replacer, 2)
+                        },
+                        create: {
+                            key: this.key,
+                            value: JSON.stringify({ creds, keys }, baileys_1.BufferJSON.replacer, 2)
+                        }
+                    });
+                    return saveStateResult;
+                });
+                return {
+                    state: {
+                        creds,
+                        keys: {
+                            get: (type, ids) => {
+                                const key = KEY_MAP[type];
+                                return ids.reduce((dict, id) => {
+                                    var _a;
+                                    let value = (_a = keys[key]) === null || _a === void 0 ? void 0 : _a[id];
+                                    if (value !== undefined) {
+                                        if (type === 'app-state-sync-key') {
+                                            value = baileys_1.proto.Message.AppStateSyncKeyData.fromObject(value);
+                                        }
+                                        dict[id] = value;
+                                    }
+                                    return dict;
+                                }, {});
+                            },
+                            set: (data) => __awaiter(this, void 0, void 0, function* () {
+                                for (const _key in data) {
+                                    const key = KEY_MAP[_key];
+                                    if (keys[key] === undefined) {
+                                        keys[key] = {};
+                                    }
+                                    Object.assign(keys[key], data[_key]);
                                 }
-                                Object.assign(keys[key], data[_key]);
-                            }
-                            yield saveState();
-                        })
-                    }
-                },
-                saveState
-            };
+                                yield saveState();
+                            })
+                        }
+                    },
+                    saveState
+                };
+            }
+            finally {
+                yield this.prismaCLient.$disconnect();
+            }
         });
     }
 }
 exports.default = AuthHandler;
+//# sourceMappingURL=AuthHandler.js.map

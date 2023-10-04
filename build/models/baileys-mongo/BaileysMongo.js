@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.BaileysMongo = void 0;
 const AuthHandler_1 = __importDefault(require("../auth-handler/AuthHandler"));
 const db_1 = require("../../db/db");
 class BaileysMongo {
@@ -50,5 +51,7 @@ class BaileysMongo {
         });
     }
 }
+exports.BaileysMongo = BaileysMongo;
 BaileysMongo._instance = new BaileysMongo();
 exports.default = BaileysMongo._instance;
+//# sourceMappingURL=BaileysMongo.js.map

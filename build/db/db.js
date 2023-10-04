@@ -32,3 +32,4 @@ class PrismaSingleton {
     }
 }
 exports.PrismaSingleton = PrismaSingleton;
+//# sourceMappingURL=db.js.map
