@@ -10,85 +10,110 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const baileys_1 = require("@whiskeysockets/baileys");
-const KEY_MAP = {
-    'pre-key': 'preKeys',
-    session: 'sessions',
-    'sender-key': 'senderKeys',
-    'app-state-sync-key': 'appStateSyncKeys',
-    'app-state-sync-version': 'appStateVersions',
-    'sender-key-memory': 'senderKeyMemory'
-};
 class AuthHandler {
     constructor(prismaCLient, key) {
         this.prismaCLient = prismaCLient;
         this.key = key;
         this.useAuthHandler = () => __awaiter(this, void 0, void 0, function* () {
             let creds;
-            let keys = {};
-            try {
-                const authDB = yield this.prismaCLient.auth.findFirst({
+            const authDBCreds = yield this.prismaCLient.auth.findFirst({
+                where: {
+                    key: `${this.key}:creds`
+                }
+            });
+            if (authDBCreds !== null && authDBCreds.value !== '') {
+                creds = JSON.parse(authDBCreds.value, baileys_1.BufferJSON.reviver);
+            }
+            else {
+                creds = (0, baileys_1.initAuthCreds)();
+            }
+            const saveInDB = (keyField, dataToSave) => __awaiter(this, void 0, void 0, function* () {
+                const dbKey = `${this.key}:${keyField}`;
+                const saveStateResult = yield this.prismaCLient.auth.upsert({
                     where: {
-                        key: this.key
+                        key: dbKey
+                    },
+                    update: {
+                        value: JSON.stringify(dataToSave, baileys_1.BufferJSON.replacer)
+                    },
+                    create: {
+                        key: dbKey,
+                        value: JSON.stringify(dataToSave, baileys_1.BufferJSON.replacer)
                     }
                 });
-                if (authDB !== null && authDB.value !== '') {
-                    ({ creds, keys } = JSON.parse(authDB.value, baileys_1.BufferJSON.reviver));
-                }
-                else {
-                    creds = (0, baileys_1.initAuthCreds)();
-                    keys = {};
-                }
-                const saveState = () => __awaiter(this, void 0, void 0, function* () {
-                    const saveStateResult = yield this.prismaCLient.auth.upsert({
-                        where: {
-                            key: this.key
-                        },
-                        update: {
-                            value: JSON.stringify({ creds, keys }, baileys_1.BufferJSON.replacer, 2)
-                        },
-                        create: {
-                            key: this.key,
-                            value: JSON.stringify({ creds, keys }, baileys_1.BufferJSON.replacer, 2)
-                        }
-                    });
-                    return saveStateResult;
+                return saveStateResult;
+            });
+            const saveManyInDB = (dataToSave) => __awaiter(this, void 0, void 0, function* () {
+                const DataSaved = yield this.prismaCLient.$transaction(dataToSave.map(data => this.prismaCLient.auth.upsert({
+                    where: { key: `${this.key}:${data.key}` },
+                    update: { value: JSON.stringify(data.value, baileys_1.BufferJSON.replacer) },
+                    create: { key: `${this.key}:${data.key}`, value: JSON.stringify(data.value, baileys_1.BufferJSON.replacer) },
+                })));
+                return DataSaved;
+            });
+            const getFromDB = (key) => __awaiter(this, void 0, void 0, function* () {
+                const data = yield this.prismaCLient.auth.findFirst({
+                    where: {
+                        key
+                    }
                 });
-                return {
-                    state: {
-                        creds,
-                        keys: {
-                            get: (type, ids) => {
-                                const key = KEY_MAP[type];
-                                return ids.reduce((dict, id) => {
-                                    var _a;
-                                    let value = (_a = keys[key]) === null || _a === void 0 ? void 0 : _a[id];
-                                    if (value !== undefined) {
-                                        if (type === 'app-state-sync-key') {
-                                            value = baileys_1.proto.Message.AppStateSyncKeyData.fromObject(value);
-                                        }
-                                        dict[id] = value;
+                if (data === null) {
+                    return null;
+                }
+                return data;
+            });
+            return {
+                state: {
+                    creds,
+                    keys: {
+                        get: (type, ids) => __awaiter(this, void 0, void 0, function* () {
+                            const promises = ids.map((id) => getFromDB(`${this.key}:${type}:${id}`));
+                            const values = yield Promise.all(promises);
+                            return ids.reduce((dict, idx) => {
+                                let value = values.find((val) => (val === null || val === void 0 ? void 0 : val.key) === `${this.key}:${type}:${idx}`);
+                                if (value !== undefined && value !== null) {
+                                    const dataParsed = JSON.parse(value.value, baileys_1.BufferJSON.reviver);
+                                    if (type === 'app-state-sync-key') {
+                                        dict[idx] = baileys_1.proto.Message.AppStateSyncKeyData.fromObject(dataParsed);
                                     }
-                                    return dict;
-                                }, {});
-                            },
-                            set: (data) => __awaiter(this, void 0, void 0, function* () {
-                                for (const _key in data) {
-                                    const key = KEY_MAP[_key];
-                                    if (keys[key] === undefined) {
-                                        keys[key] = {};
-                                    }
-                                    Object.assign(keys[key], data[_key]);
+                                    dict[idx] = dataParsed;
                                 }
-                                yield saveState();
-                            })
-                        }
-                    },
-                    saveState
-                };
-            }
-            finally {
-                yield this.prismaCLient.$disconnect();
-            }
+                                return dict;
+                            }, {});
+                        }),
+                        set: (data) => __awaiter(this, void 0, void 0, function* () {
+                            const dataToSave = [];
+                            for (const _key in data) {
+                                let signalData = data[_key];
+                                if (signalData === undefined) {
+                                    signalData = {};
+                                }
+                                for (const id in signalData) {
+                                    const value = signalData[id];
+                                    const key = `${_key}:${id}`;
+                                    dataToSave.push({
+                                        key,
+                                        value
+                                    });
+                                }
+                            }
+                            yield saveManyInDB(dataToSave);
+                        })
+                    }
+                },
+                saveState: () => __awaiter(this, void 0, void 0, function* () {
+                    yield saveInDB('creds', creds);
+                })
+            };
+        });
+        this.deleteKeys = (storeKey, prismaCLient) => __awaiter(this, void 0, void 0, function* () {
+            yield prismaCLient.auth.deleteMany({
+                where: {
+                    key: {
+                        startsWith: storeKey
+                    }
+                }
+            });
         });
     }
 }
