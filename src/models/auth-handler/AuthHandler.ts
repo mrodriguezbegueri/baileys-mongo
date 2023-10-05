@@ -40,6 +40,21 @@ export default class AuthHandler {
       return saveStateResult
     }
 
+    const saveManyInDB = async (dataToSave: any[]): Promise<Auth[]> => {
+
+      const DataSaved = await this.prismaCLient.$transaction(
+        dataToSave.map(data =>
+          this.prismaCLient.auth.upsert({
+            where: { key: `${this.key}:${data.key}` },
+            update: { value: JSON.stringify(data.value, BufferJSON.replacer) },
+            create: { key: `${this.key}:${data.key}` , value: JSON.stringify(data.value, BufferJSON.replacer)},
+          })
+        )
+      )
+
+      return DataSaved
+    }
+
     const getFromDB = async (key: string): Promise<Auth | null> => {
       const data = await this.prismaCLient.auth.findFirst({
         where: {
@@ -76,6 +91,7 @@ export default class AuthHandler {
             }, {})
           },
           set: async (data: SignalDataSet) => {
+            const dataToSave = []
             for (const _key in data) {
 
               let signalData = data[_key as keyof SignalDataTypeMap]
@@ -85,11 +101,18 @@ export default class AuthHandler {
               }
 
               for (const id in signalData) {
-                const value = signalData[id]
+                const value = signalData[id] as string
                 const key = `${_key}:${id}`
-                await saveInDB(key, value)
+                dataToSave.push({
+                  key,
+                  value
+                })
+                // await saveInDB(key, value)
               }
             }
+
+            await saveManyInDB(dataToSave)
+
           }
         }
       },
