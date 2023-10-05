@@ -2,88 +2,100 @@ import { AuthenticationCreds, BufferJSON, initAuthCreds, proto, SignalDataSet, S
 import { PrismaClient, Auth } from '@prisma/client'
 import { useAuthHandlerResult } from '../../types'
 
-const KEY_MAP: { [T in keyof SignalDataTypeMap]: string } = {
-  'pre-key': 'preKeys',
-  session: 'sessions',
-  'sender-key': 'senderKeys',
-  'app-state-sync-key': 'appStateSyncKeys',
-  'app-state-sync-version': 'appStateVersions',
-  'sender-key-memory': 'senderKeyMemory'
-}
-
 export default class AuthHandler {
-  constructor (private readonly prismaCLient: PrismaClient, private readonly key: string) {}
+  constructor(private readonly prismaCLient: PrismaClient, private readonly key: string) { }
 
   useAuthHandler = async (): Promise<useAuthHandlerResult> => {
     let creds: AuthenticationCreds
-    let keys: any = {}
+    const authDBCreds = await this.prismaCLient.auth.findFirst({
+      where: {
+        key: `${this.key}:creds`
+      }
+    })
 
-    try {
-      const authDB = await this.prismaCLient.auth.findFirst({
+    if (authDBCreds !== null && authDBCreds.value !== '') {
+      creds = JSON.parse(authDBCreds.value, BufferJSON.reviver)
+    } else {
+      creds = initAuthCreds()
+      // keys = {}
+    }
+
+    const saveInDB = async (keyField: string, dataToSave: any): Promise<Auth> => {
+
+      const dbKey = `${this.key}:${keyField}`
+
+      const saveStateResult = await this.prismaCLient.auth.upsert({
         where: {
-          key: this.key
+          key: dbKey
+        },
+        update: {
+          value: JSON.stringify(dataToSave, BufferJSON.replacer)
+        },
+        create: {
+          key: dbKey,
+          value: JSON.stringify(dataToSave, BufferJSON.replacer)
         }
       })
-  
-      if (authDB !== null && authDB.value !== '') {
-        ({ creds, keys } = JSON.parse(authDB.value, BufferJSON.reviver))
-      } else {
-        creds = initAuthCreds()
-        keys = {}
+
+      return saveStateResult
+    }
+
+    const getFromDB = async (key: string): Promise<Auth | null> => {
+      const data = await this.prismaCLient.auth.findFirst({
+        where: {
+          key
+        }
+      })
+
+      if (data === null) {
+        return null
       }
-  
-      const saveState = async (): Promise<Auth> => {
-        const saveStateResult = await this.prismaCLient.auth.upsert({
-          where: {
-            key: this.key
-          },
-          update: {
-            value: JSON.stringify({ creds, keys }, BufferJSON.replacer, 2)
-          },
-          create: {
-            key: this.key,
-            value: JSON.stringify({ creds, keys }, BufferJSON.replacer, 2)
-          }
-        })
-    
-        return saveStateResult
-      }
-  
-      return {
-        state: {
-          creds,
-          keys: {
-            get: <T extends keyof SignalDataTypeMap>(type: T, ids: string[]) => {
-              const key = KEY_MAP[type]
-              return ids.reduce((dict: any, id) => {
-                let value = keys[key]?.[id]
-                if (value !== undefined) {
-                  if (type === 'app-state-sync-key') {
-                    value = proto.Message.AppStateSyncKeyData.fromObject(value)
-                  }
-                  dict[id] = value
+
+      return data
+    }
+
+    return {
+      state: {
+        creds,
+        keys: {
+          get: async  <T extends keyof SignalDataTypeMap>(type: T, ids: string[]) => {
+            const promises = ids.map((id) => getFromDB(`${this.key}:${type}:${id}`))
+            const values = await Promise.all(promises)
+
+            return ids.reduce((dict: any, idx) => {
+              let value = values.find((val) => val?.key === `${this.key}:${type}:${idx}`)
+
+              if (value !== undefined && value !== null) {
+                const dataParsed = JSON.parse(value.value, BufferJSON.reviver)
+                if (type === 'app-state-sync-key') {
+                  dict[idx] = proto.Message.AppStateSyncKeyData.fromObject(dataParsed)
                 }
-                return dict
-              }, {})
-            },
-            set: async (data: SignalDataSet) => {
-              for (const _key in data) {
-                const key = KEY_MAP[_key as keyof SignalDataTypeMap]
-                if (keys[key] === undefined) {
-                  keys[key] = {}
-                }
-                Object.assign(keys[key], data[_key as keyof SignalDataTypeMap])
+                dict[idx] = dataParsed
               }
-  
-              await saveState()
+              return dict
+            }, {})
+          },
+          set: async (data: SignalDataSet) => {
+            for (const _key in data) {
+
+              let signalData = data[_key as keyof SignalDataTypeMap]
+
+              if (signalData === undefined) {
+                signalData = {}
+              }
+
+              for (const id in signalData) {
+                const value = signalData[id]
+                const key = `${_key}:${id}`
+                await saveInDB(key, value)
+              }
             }
           }
-        },
-        saveState
+        }
+      },
+      saveState: async () => {
+        await saveInDB('creds', creds)
       }
-    } finally {
-      await this.prismaCLient.$disconnect()
     }
-    
   }
 }

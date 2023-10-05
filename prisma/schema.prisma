@@ -1,11 +1,6 @@
-// datasource db {
-//   provider = "mongodb"
-//   url      = env("MONGO_DB_URL")
-// }
-
 datasource db {
-  provider = "postgresql" // Cambia "mongodb" a "postgresql"
-  url      = env("POSTGRESQL_DB_URL") // Define tu URL de conexión de PostgreSQL
+  provider = "mongodb"
+  url      = env("MONGO_DB_URL")
 }
 
 generator client {
@@ -14,15 +9,9 @@ generator client {
 
 
 model Auth {
-  id    Int     @id @default(autoincrement())
-  key   String  @unique
-  value String  // Cambia "TEXT" si deseas una longitud máxima específica
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  key       String @unique
+  value String
 }
-
-// model Auth {
-//   id          String  @id @default(auto()) @map("_id") @db.ObjectId
-//   key       String @unique
-//   value TEXT
-// }
 
 
