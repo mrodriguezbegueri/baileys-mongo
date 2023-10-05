@@ -48,16 +48,6 @@ export class BaileysMongo {
 
     return { createNewAuth: createAuthStore }
   }
-
-  deleteKeys = async (storeKey: string, prismaCLient: PrismaClient): Promise<void> => {
-    await prismaCLient.auth.deleteMany({
-      where: {
-        key: {
-          startsWith: storeKey
-        }
-      }
-    })
-  }
 }
 
 export default BaileysMongo._instance

@@ -17,7 +17,6 @@ export default class AuthHandler {
       creds = JSON.parse(authDBCreds.value, BufferJSON.reviver)
     } else {
       creds = initAuthCreds()
-      // keys = {}
     }
 
     const saveInDB = async (keyField: string, dataToSave: any): Promise<Auth> => {
@@ -107,12 +106,9 @@ export default class AuthHandler {
                   key,
                   value
                 })
-                // await saveInDB(key, value)
               }
             }
-
             await saveManyInDB(dataToSave)
-
           }
         }
       },
@@ -120,5 +116,15 @@ export default class AuthHandler {
         await saveInDB('creds', creds)
       }
     }
+  }
+  
+  deleteKeys = async (storeKey: string, prismaCLient: PrismaClient): Promise<void> => {
+    await prismaCLient.auth.deleteMany({
+      where: {
+        key: {
+          startsWith: storeKey
+        }
+      }
+    })
   }
 }
