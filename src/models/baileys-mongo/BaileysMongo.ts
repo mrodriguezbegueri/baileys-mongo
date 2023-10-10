@@ -29,7 +29,7 @@ export class BaileysMongo {
         mongoDB: prismaClient
       }
     } catch (err) {
-      throw new Error('Error creating auth in mongo ---- Error')
+      throw new Error(err)
     }
   }
 
