@@ -29,7 +29,7 @@ class AuthHandler {
             }
             const saveInDB = (keyField, dataToSave) => __awaiter(this, void 0, void 0, function* () {
                 const dbKey = `${this.key}:${keyField}`;
-                const saveStateResult = yield this.prismaCLient.auth.upsert({
+                const saveStatePromise = this.prismaCLient.auth.upsert({
                     where: {
                         key: dbKey
                     },
@@ -41,15 +41,7 @@ class AuthHandler {
                         value: JSON.stringify(dataToSave, baileys_1.BufferJSON.replacer)
                     }
                 });
-                return saveStateResult;
-            });
-            const saveManyInDB = (dataToSave) => __awaiter(this, void 0, void 0, function* () {
-                const DataSaved = yield this.prismaCLient.$transaction(dataToSave.map(data => this.prismaCLient.auth.upsert({
-                    where: { key: `${this.key}:${data.key}` },
-                    update: { value: JSON.stringify(data.value, baileys_1.BufferJSON.replacer) },
-                    create: { key: `${this.key}:${data.key}`, value: JSON.stringify(data.value, baileys_1.BufferJSON.replacer) },
-                })));
-                return DataSaved;
+                return saveStatePromise;
             });
             const getFromDB = (key) => __awaiter(this, void 0, void 0, function* () {
                 const data = yield this.prismaCLient.auth.findFirst({
@@ -91,13 +83,11 @@ class AuthHandler {
                                 for (const id in signalData) {
                                     const value = signalData[id];
                                     const key = `${_key}:${id}`;
-                                    dataToSave.push({
-                                        key,
-                                        value
-                                    });
+                                    const dbPromise = saveInDB(key, value);
+                                    dataToSave.push(dbPromise);
                                 }
                             }
-                            yield saveManyInDB(dataToSave);
+                            yield Promise.all(dataToSave);
                         })
                     }
                 },

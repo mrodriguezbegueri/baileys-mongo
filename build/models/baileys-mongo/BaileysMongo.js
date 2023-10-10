@@ -38,7 +38,7 @@ class BaileysMongo {
                 };
             }
             catch (err) {
-                throw new Error('Error creating auth in mongo ---- Error');
+                throw new Error(err);
             }
         });
         this.init = () => __awaiter(this, void 0, void 0, function* () {
