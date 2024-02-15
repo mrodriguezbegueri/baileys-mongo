@@ -2,12 +2,17 @@ import { PrismaClient } from '@prisma/client'
 import AuthHandler from '../auth-handler/AuthHandler'
 import { PrismaSingleton } from '../../db/db'
 import { CreateNewAuthResult } from '../../types'
+
 export class BaileysMongo {
   static _instance = new BaileysMongo()
 
   private constructor () {}
 
-  private readonly createNewAuth = async (storeKey: string, prismaClient: PrismaClient): Promise<{auth: AuthHandler, mongoDB: PrismaClient}> => {
+  private readonly createNewAuth = async (
+    storeKey: string,
+    prismaClient: PrismaClient,
+    payload: Record<string, any> | undefined
+  ): Promise<CreateNewAuthResult> => {
     try {
       const store = await prismaClient.auth.findFirst({
         where: {
@@ -19,7 +24,8 @@ export class BaileysMongo {
         await prismaClient.auth.create({
           data: {
             key: storeKey,
-            value: ''
+            value: '',
+            ...(payload ?? {})
           }
         })
       }
@@ -35,18 +41,28 @@ export class BaileysMongo {
 
   init = async (): Promise<{
     createNewAuth: (
-    storeKey: string
+    storeKey: string,
+    payload?: Record<string, any>
     ) => Promise<CreateNewAuthResult>
   }> => {
     const { prismaClient } = await PrismaSingleton.getInstance()
 
-    const createAuthStore = async (storeKey: string): Promise<{auth: AuthHandler, mongoDB: PrismaClient}> => {
-      const auth = await this.createNewAuth(storeKey, prismaClient)
+    const createAuthStore = async (
+      storeKey: string,
+      payload?: Record<string, any>
+    ): Promise<CreateNewAuthResult> => {
+      const auth = await this.createNewAuth(storeKey, prismaClient, payload)
 
       return auth
     }
 
     return { createNewAuth: createAuthStore }
+  }
+
+  getDb = async (): Promise<PrismaClient> => {
+    const { prismaClient } = await PrismaSingleton.getInstance()
+
+    return prismaClient
   }
 }
 

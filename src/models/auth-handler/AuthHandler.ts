@@ -3,7 +3,7 @@ import { PrismaClient, Auth } from '@prisma/client'
 import { useAuthHandlerResult } from '../../types'
 
 export default class AuthHandler {
-  constructor(private readonly prismaCLient: PrismaClient, private readonly key: string) { }
+  constructor (private readonly prismaCLient: PrismaClient, private readonly key: string) { }
 
   useAuthHandler = async (): Promise<useAuthHandlerResult> => {
     let creds: AuthenticationCreds
@@ -35,7 +35,7 @@ export default class AuthHandler {
         }
       })
 
-      return saveStatePromise
+      return await saveStatePromise
     }
 
     const getFromDB = async (key: string): Promise<Auth | null> => {
@@ -56,12 +56,12 @@ export default class AuthHandler {
       state: {
         creds,
         keys: {
-          get: async  <T extends keyof SignalDataTypeMap>(type: T, ids: string[]) => {
-            const promises = ids.map((id) => getFromDB(`${this.key}:${type}:${id}`))
+          get: async <T extends keyof SignalDataTypeMap>(type: T, ids: string[]) => {
+            const promises = ids.map(async (id) => await getFromDB(`${this.key}:${type}:${id}`))
             const values = await Promise.all(promises)
 
             return ids.reduce((dict: any, idx) => {
-              let value = values.find((val) => val?.key === `${this.key}:${type}:${idx}`)
+              const value = values.find((val) => val?.key === `${this.key}:${type}:${idx}`)
 
               if (value !== undefined && value !== null) {
                 const dataParsed = JSON.parse(value.value, BufferJSON.reviver)
@@ -76,7 +76,6 @@ export default class AuthHandler {
           set: async (data: SignalDataSet) => {
             const dataToSave = []
             for (const _key in data) {
-
               let signalData = data[_key as keyof SignalDataTypeMap]
 
               if (signalData === undefined) {
@@ -99,7 +98,7 @@ export default class AuthHandler {
       }
     }
   }
-  
+
   deleteKeys = async (storeKey: string, prismaCLient: PrismaClient): Promise<void> => {
     await prismaCLient.auth.deleteMany({
       where: {

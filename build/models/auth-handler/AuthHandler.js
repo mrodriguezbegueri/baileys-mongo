@@ -41,7 +41,7 @@ class AuthHandler {
                         value: JSON.stringify(dataToSave, baileys_1.BufferJSON.replacer)
                     }
                 });
-                return saveStatePromise;
+                return yield saveStatePromise;
             });
             const getFromDB = (key) => __awaiter(this, void 0, void 0, function* () {
                 const data = yield this.prismaCLient.auth.findFirst({
@@ -59,10 +59,10 @@ class AuthHandler {
                     creds,
                     keys: {
                         get: (type, ids) => __awaiter(this, void 0, void 0, function* () {
-                            const promises = ids.map((id) => getFromDB(`${this.key}:${type}:${id}`));
+                            const promises = ids.map((id) => __awaiter(this, void 0, void 0, function* () { return yield getFromDB(`${this.key}:${type}:${id}`); }));
                             const values = yield Promise.all(promises);
                             return ids.reduce((dict, idx) => {
-                                let value = values.find((val) => (val === null || val === void 0 ? void 0 : val.key) === `${this.key}:${type}:${idx}`);
+                                const value = values.find((val) => (val === null || val === void 0 ? void 0 : val.key) === `${this.key}:${type}:${idx}`);
                                 if (value !== undefined && value !== null) {
                                     const dataParsed = JSON.parse(value.value, baileys_1.BufferJSON.reviver);
                                     if (type === 'app-state-sync-key') {

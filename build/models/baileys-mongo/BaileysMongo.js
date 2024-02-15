@@ -17,7 +17,7 @@ const AuthHandler_1 = __importDefault(require("../auth-handler/AuthHandler"));
 const db_1 = require("../../db/db");
 class BaileysMongo {
     constructor() {
-        this.createNewAuth = (storeKey, prismaClient) => __awaiter(this, void 0, void 0, function* () {
+        this.createNewAuth = (storeKey, prismaClient, payload) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const store = yield prismaClient.auth.findFirst({
                     where: {
@@ -26,10 +26,7 @@ class BaileysMongo {
                 });
                 if (store == null) {
                     yield prismaClient.auth.create({
-                        data: {
-                            key: storeKey,
-                            value: ''
-                        }
+                        data: Object.assign({ key: storeKey, value: '' }, (payload !== null && payload !== void 0 ? payload : {}))
                     });
                 }
                 return {
@@ -43,11 +40,15 @@ class BaileysMongo {
         });
         this.init = () => __awaiter(this, void 0, void 0, function* () {
             const { prismaClient } = yield db_1.PrismaSingleton.getInstance();
-            const createAuthStore = (storeKey) => __awaiter(this, void 0, void 0, function* () {
-                const auth = yield this.createNewAuth(storeKey, prismaClient);
+            const createAuthStore = (storeKey, payload) => __awaiter(this, void 0, void 0, function* () {
+                const auth = yield this.createNewAuth(storeKey, prismaClient, payload);
                 return auth;
             });
             return { createNewAuth: createAuthStore };
+        });
+        this.getDb = () => __awaiter(this, void 0, void 0, function* () {
+            const { prismaClient } = yield db_1.PrismaSingleton.getInstance();
+            return prismaClient;
         });
     }
 }
